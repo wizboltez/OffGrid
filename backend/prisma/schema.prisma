@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ApprovalActionType {
+  APPLIED
+  APPROVED
+  REJECTED
+  CANCELLED
+  OVERRIDDEN
+}
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
+  users User[]
+}
+
+model Department {
+  id          Int    @id @default(autoincrement())
+  name        String @unique @db.VarChar(100)
+  description String?
+  users       User[]
+
+  @@index([name])
+}
+
+model User {
+  id              Int            @id @default(autoincrement())
+  fullName        String         @db.VarChar(120)
+  email           String         @unique @db.VarChar(191)
+  passwordHash    String
+  roleId          Int
+  departmentId    Int?
+  managerId       Int?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  role            Role           @relation(fields: [roleId], references: [id])
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  manager         User?          @relation("ManagerEmployee", fields: [managerId], references: [id])
+  teamMembers     User[]         @relation("ManagerEmployee")
+  leaveRequests   LeaveRequest[] @relation("EmployeeRequests")
+  approvals       LeaveRequest[] @relation("ApproverRequests")
+  balances        LeaveBalance[]
+  approvalLogs    ApprovalLog[]
+  notifications   Notification[]
+
+  @@index([roleId])
+  @@index([departmentId])
+  @@index([managerId])
+  @@index([isActive])
+}
+
+model LeaveType {
+  id                  Int            @id @default(autoincrement())
+  name                String         @unique @db.VarChar(100)
+  description         String?
+  defaultAllowance    Decimal        @db.Decimal(5, 2)
+  requiresDocument    Boolean        @default(false)
+  carryForwardAllowed Boolean        @default(false)
+  isActive            Boolean        @default(true)
+  leaveRequests       LeaveRequest[]
+  balances            LeaveBalance[]
+
+  @@index([isActive])
+}
+
+model LeaveRequest {
+  id             Int            @id @default(autoincrement())
+  employeeId     Int
+  leaveTypeId    Int
+  startDate      DateTime
+  endDate        DateTime
+  totalDays      Decimal        @db.Decimal(5, 2)
+  isHalfDay      Boolean        @default(false)
+  reason         String         @db.VarChar(500)
+  emergencyFlag  Boolean        @default(false)
+  status         LeaveStatus    @default(PENDING)
+  managerRemark  String?        @db.VarChar(500)
+  appliedAt      DateTime       @default(now())
+  approvedBy     Int?
+  approvedAt     DateTime?
+  cancelledAt    DateTime?
+  employee       User           @relation("EmployeeRequests", fields: [employeeId], references: [id])
+  leaveType      LeaveType      @relation(fields: [leaveTypeId], references: [id])
+  approver       User?          @relation("ApproverRequests", fields: [approvedBy], references: [id])
+  approvalLogs   ApprovalLog[]
+  attachments    Attachment[]
+
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model LeaveBalance {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  leaveTypeId    Int
+  year           Int
+  allocated      Decimal  @db.Decimal(6, 2)
+  used           Decimal  @db.Decimal(6, 2) @default(0)
+  remaining      Decimal  @db.Decimal(6, 2)
+  carriedForward Decimal  @db.Decimal(6, 2) @default(0)
+  updatedAt      DateTime @updatedAt
+  employee       User     @relation(fields: [employeeId], references: [id])
+  leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@index([year])
+}
+
+model ApprovalLog {
+  id             Int                @id @default(autoincrement())
+  leaveRequestId Int
+  actionBy       Int
+  actionType     ApprovalActionType
+  remark         String?            @db.VarChar(500)
+  actionAt       DateTime           @default(now())
+  leaveRequest   LeaveRequest       @relation(fields: [leaveRequestId], references: [id])
+  actor          User               @relation(fields: [actionBy], references: [id])
+
+  @@index([leaveRequestId])
+  @@index([actionBy])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String   @db.VarChar(120)
+  message   String   @db.VarChar(500)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Attachment {
+  id             Int      @id @default(autoincrement())
+  leaveRequestId Int
+  fileName       String   @db.VarChar(191)
+  filePath       String   @db.VarChar(255)
+  mimeType       String   @db.VarChar(100)
+  uploadedAt     DateTime @default(now())
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id])
+
+  @@index([leaveRequestId])
+}

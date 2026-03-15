@@ -1,110 +1,81 @@
-USE leave_management_system;
+USE leave_management;
 
--- 1. View all employees
-SELECT * FROM Employee;
+-- 1. Employee list with role and department
+SELECT u.id, u.full_name, u.email, r.name AS role, d.name AS department, u.is_active
+FROM users u
+JOIN roles r ON r.id = u.role_id
+LEFT JOIN departments d ON d.id = u.department_id
+ORDER BY u.created_at DESC;
 
--- 2. Employees working remotely
-SELECT Name
-FROM Employee
-WHERE WorkMode = 'Remote';
+-- 2. All pending requests for a manager's direct reports
+SELECT lr.id, u.full_name AS employee, lt.name AS leave_type, lr.start_date, lr.end_date, lr.total_days, lr.status
+FROM leave_requests lr
+JOIN users u ON u.id = lr.employee_id
+JOIN leave_types lt ON lt.id = lr.leave_type_id
+WHERE u.manager_id = 2 AND lr.status = 'PENDING'
+ORDER BY lr.applied_at DESC;
 
--- 3. Employees with priority level >= 3
-SELECT *
-FROM Employee
-WHERE PriorityLevel >= 3;
+-- 3. Overlap check query used before applying leave
+SELECT COUNT(*) AS overlap_count
+FROM leave_requests
+WHERE employee_id = 3
+	AND status IN ('PENDING', 'APPROVED')
+	AND start_date <= '2026-04-15'
+	AND end_date >= '2026-04-11';
 
--- 4. Employee with Department
-SELECT E.Name, D.DeptName
-FROM Employee E
-JOIN Team T ON E.TeamID = T.TeamID
-JOIN Department D ON T.DeptID = D.DeptID;
+-- 4. Employee leave balance view
+SELECT lb.employee_id, u.full_name, lt.name AS leave_type, lb.year, lb.allocated, lb.used, lb.remaining
+FROM leave_balances lb
+JOIN users u ON u.id = lb.employee_id
+JOIN leave_types lt ON lt.id = lb.leave_type_id
+WHERE lb.employee_id = 3 AND lb.year = 2026;
 
--- 5. Employee Leave Requests
-SELECT E.Name, LR.StartDate, LR.EndDate, LR.Reason
-FROM Employee E
-JOIN LeaveRequest LR
-ON E.EmployeeID = LR.EmployeeID;
+-- 5. Department leave trend
+SELECT d.name AS department, COUNT(lr.id) AS total_requests,
+			 SUM(CASE WHEN lr.status = 'APPROVED' THEN 1 ELSE 0 END) AS approved_count,
+			 SUM(CASE WHEN lr.status = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_count
+FROM departments d
+LEFT JOIN users u ON u.department_id = d.id
+LEFT JOIN leave_requests lr ON lr.employee_id = u.id
+GROUP BY d.name
+ORDER BY total_requests DESC;
 
--- 6. Leave Approval with Manager
-SELECT LR.LeaveID, LA.ApprovalStatus, E.Name AS ApprovedBy
-FROM LeaveApproval LA
-JOIN Employee E ON LA.ApprovedBy = E.EmployeeID
-JOIN LeaveRequest LR ON LR.LeaveID = LA.LeaveID;
+-- 6. Monthly analytics
+SELECT DATE_FORMAT(applied_at, '%Y-%m') AS month_bucket,
+			 COUNT(*) AS total,
+			 SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+			 SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+			 SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pending
+FROM leave_requests
+GROUP BY month_bucket
+ORDER BY month_bucket DESC;
 
--- 7. Logical operator example
-SELECT *
-FROM Employee
-WHERE WorkMode='Remote'
-AND PriorityLevel >= 2;
+-- 7. Team leave calendar list for manager
+SELECT u.full_name, lr.start_date, lr.end_date, lr.status
+FROM leave_requests lr
+JOIN users u ON u.id = lr.employee_id
+WHERE u.manager_id = 2
+	AND lr.status = 'APPROVED'
+ORDER BY lr.start_date ASC;
 
--- 8. BETWEEN operator
-SELECT *
-FROM LeaveRequest
-WHERE StartDate BETWEEN '2026-04-01' AND '2026-04-30';
+-- 8. Notifications inbox by user
+SELECT id, title, message, is_read, created_at
+FROM notifications
+WHERE user_id = 3
+ORDER BY created_at DESC;
 
--- 9. IN operator
-SELECT *
-FROM Employee
-WHERE TeamID IN (1,2);
+-- 9. Sample pagination and sorting for all requests
+SELECT lr.id, u.full_name, lt.name, lr.status, lr.applied_at
+FROM leave_requests lr
+JOIN users u ON u.id = lr.employee_id
+JOIN leave_types lt ON lt.id = lr.leave_type_id
+ORDER BY lr.applied_at DESC
+LIMIT 10 OFFSET 0;
 
--- 10. COUNT function
-SELECT COUNT(*) AS TotalEmployees
-FROM Employee;
-
--- 11. SUM function
-SELECT SUM(UsedLeaves) AS TotalLeavesUsed
-FROM LeaveBalance;
-
--- 12. AVG function
-SELECT AVG(PriorityLevel) AS AvgPriority
-FROM Employee;
-
--- 13. MAX function
-SELECT MAX(UsedLeaves) AS MaxLeavesTaken
-FROM LeaveBalance;
-
--- 14. Calculate number of leave days
-SELECT LeaveID,
-DATEDIFF(EndDate,StartDate)+1 AS NumberOfDays
-FROM LeaveRequest;
-
--- 15. Update leave approval
-UPDATE LeaveApproval
-SET ApprovalStatus='Rejected'
-WHERE ApprovalID=3;
-
--- 16. Update employee work mode
-UPDATE Employee
-SET WorkMode='Hybrid'
-WHERE EmployeeID=3;
-
--- 17. Update leave balance
-UPDATE LeaveBalance
-SET UsedLeaves = UsedLeaves + 2
-WHERE EmployeeID = 1;
-
--- Delete dependent records first
-DELETE FROM LeaveBalance
-WHERE EmployeeID = 6;
-
-DELETE FROM LeaveRequest
-WHERE EmployeeID = 6;
-
-DELETE FROM TeamLead
-WHERE EmployeeID = 6;
-
--- Now delete the employee
-DELETE FROM Employee
-WHERE EmployeeID = 6;
-
--- 20. Remaining leaves calculation
-SELECT EmployeeID,
-TotalLeaves - UsedLeaves AS RemainingLeaves
-FROM LeaveBalance;
-
--- 21. Employees currently on leave
-SELECT E.Name, LR.StartDate, LR.EndDate
-FROM Employee E
-JOIN LeaveRequest LR
-ON E.EmployeeID = LR.EmployeeID
-WHERE CURDATE() BETWEEN LR.StartDate AND LR.EndDate;
+-- 10. Optional CSV-export ready report data set
+SELECT u.full_name, d.name AS department, lt.name AS leave_type, lr.start_date, lr.end_date, lr.total_days, lr.status
+FROM leave_requests lr
+JOIN users u ON u.id = lr.employee_id
+LEFT JOIN departments d ON d.id = u.department_id
+JOIN leave_types lt ON lt.id = lr.leave_type_id
+ORDER BY lr.start_date DESC;
