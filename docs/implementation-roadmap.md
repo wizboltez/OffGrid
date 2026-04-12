@@ -3,7 +3,7 @@
 1. Define domain model and relational schema
 2. Create Prisma models and migrations
 3. Seed core roles, departments, leave types, and default users
-4. Build auth flow (register/login/JWT)
+4. Build auth flow (login/JWT)
 5. Add RBAC middleware and route protection
 6. Build user, department, and leave-type management APIs
 7. Build leave request flow with validations and overlap/balance checks
