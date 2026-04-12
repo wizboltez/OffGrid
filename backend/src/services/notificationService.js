@@ -13,3 +13,10 @@ export function listMyNotifications(userId) {
     take: 50,
   });
 }
+
+export async function markAllAsRead(userId) {
+  return prisma.notification.updateMany({
+    where: { userId, isRead: false },
+    data: { isRead: true },
+  });
+}

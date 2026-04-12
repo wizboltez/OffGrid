@@ -32,7 +32,7 @@ export async function getManagerDashboard(managerId) {
   });
   const employeeIds = teamMembers.map((user) => user.id);
 
-  const [pendingApprovals, teamOnLeaveToday, teamBalances] = await Promise.all([
+  const [pendingApprovals, teamOnLeaveToday, teamBalances, leaveApplications, leaveHistory] = await Promise.all([
     prisma.leaveRequest.findMany({
       where: { employeeId: { in: employeeIds }, status: LeaveStatus.PENDING },
       include: { employee: true, leaveType: true },
@@ -53,9 +53,21 @@ export async function getManagerDashboard(managerId) {
       include: { employee: true, leaveType: true },
       take: 50,
     }),
+    prisma.leaveRequest.findMany({
+      where: { employeeId: { in: employeeIds }, status: LeaveStatus.PENDING },
+      include: { employee: true, leaveType: true },
+      orderBy: { appliedAt: "desc" },
+      take: 15,
+    }),
+    prisma.leaveRequest.findMany({
+      where: { employeeId: { in: employeeIds }, status: { not: LeaveStatus.PENDING } },
+      include: { employee: true, leaveType: true },
+      orderBy: { approvedAt: "desc" },
+      take: 20,
+    }),
   ]);
 
-  return { pendingApprovals, teamOnLeaveToday, teamBalances };
+  return { pendingApprovals, teamOnLeaveToday, teamBalances, leaveApplications, leaveHistory };
 }
 
 export async function getAdminDashboard() {

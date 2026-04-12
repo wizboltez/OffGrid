@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -43,24 +42,45 @@ export default function LoginPage() {
 
   return (
     <main className="auth-shell">
+      {/* Animated background elements */}
+      <div className="auth-blob auth-blob-1"></div>
+      <div className="auth-blob auth-blob-2"></div>
+      <div className="auth-blob auth-blob-3"></div>
+      <div className="auth-pixel auth-pixel-1"></div>
+      <div className="auth-pixel auth-pixel-2"></div>
+      <div className="auth-pixel auth-pixel-3"></div>
+      <div className="auth-pixel auth-pixel-4"></div>
+
       <section className="auth-card">
-        <h1 style={{ fontFamily: "var(--font-space)", marginTop: 0 }}>Sign in</h1>
-        <p className="muted">Access your leave workspace securely.</p>
+        <div className="auth-header">
+          <div>
+            <h1 className="auth-title">OffGrid</h1>
+            <p className="auth-subtitle">Leave Management Redefined</p>
+          </div>
+        </div>
 
-        <form className="grid" onSubmit={handleSubmit(onSubmit)}>
-          <Input label="Email" type="email" placeholder="you@company.com" error={errors.email?.message} {...register("email")} />
-          <Input label="Password" type="password" placeholder="********" error={errors.password?.message} {...register("password")} />
+        <p className="auth-description">Welcome back! 
+          <br /> Manage your leave with ease.</p>
 
-          {errors.root?.message ? <p className="error">{errors.root.message}</p> : null}
+        <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
+          <div className="form-group">
+            <Input label="Email Address" type="email" placeholder="you@company.com" error={errors.email?.message} {...register("email")} />
+          </div>
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign in"}
+          <div className="form-group">
+            <Input label="Password" type="password" placeholder="••••••••" error={errors.password?.message} {...register("password")} />
+          </div>
+
+          {errors.root?.message ? <p className="auth-error">{errors.root.message}</p> : null}
+
+          <Button type="submit" disabled={isSubmitting} className="auth-btn">
+            {isSubmitting ? "Signing in..." : "Enter OffGrid"}
           </Button>
         </form>
 
-        <p className="muted" style={{ marginTop: "1rem" }}>
-          New here? <Link href="/register" style={{ color: "var(--brand)" }}>Create account</Link>
-        </p>
+        <div className="auth-footer">
+          <p>Need help? Contact your administrator</p>
+        </div>
       </section>
     </main>
   );

@@ -17,7 +17,6 @@
 15. Harden for production: logging, tests, CI/CD, and monitoring
 
 ## Reusable Components List
-
 - ProtectedLayout
 - Button
 - Input
@@ -26,7 +25,6 @@
 - StatusBadge
 
 ## Future Improvements
-
 - Refresh token rotation + revocation list
 - Holiday and weekend exclusion calendar
 - Full leave policy engine per department/grade

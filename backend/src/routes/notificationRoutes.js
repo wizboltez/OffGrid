@@ -4,5 +4,6 @@ import * as notificationController from "../controllers/notificationController.j
 const router = Router();
 
 router.get("/", notificationController.mine);
+router.patch("/mark-as-read", notificationController.markAsRead);
 
 export default router;

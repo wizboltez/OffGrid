@@ -1,14 +1,23 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "lib/apiClient";
 import { Card } from "components/ui/Card";
 
 export default function NotificationsPage() {
+  const queryClient = useQueryClient();
+
   const { data } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => (await api.get("/notifications")).data.data,
   });
+
+  useEffect(() => {
+    api.patch("/notifications/mark-as-read").then(() => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    });
+  }, [queryClient]);
 
   return (
     <div className="grid">

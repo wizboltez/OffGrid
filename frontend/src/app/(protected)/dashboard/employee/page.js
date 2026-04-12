@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "lib/apiClient";
+import { formatDateDDMMYYYY } from "lib/dateFormat";
 import { Card } from "components/ui/Card";
 import { StatusBadge } from "components/ui/StatusBadge";
 import Link from "next/link";
@@ -52,7 +53,7 @@ export default function EmployeeDashboardPage() {
           recent.map((request) => (
             <div key={request.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.7rem" }}>
               <span>
-                {request.leaveType.name} | {request.startDate.slice(0, 10)} to {request.endDate.slice(0, 10)}
+                {request.leaveType.name} | {formatDateDDMMYYYY(request.startDate)} to {formatDateDDMMYYYY(request.endDate)}
               </span>
               <StatusBadge status={request.status} />
             </div>

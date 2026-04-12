@@ -7,6 +7,7 @@ import { api } from "lib/apiClient";
 import { Card } from "components/ui/Card";
 import { Button } from "components/ui/Button";
 import { useAuth } from "features/auth/AuthContext";
+import { getEmployeeColor } from "lib/colorUtils";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -60,7 +61,7 @@ export default function CalendarPage() {
 
   const { data } = useQuery({
     queryKey: ["leave-requests", "calendar"],
-    queryFn: async () => (await api.get("/leave-requests")).data.data,
+    queryFn: async () => (await api.get("/leave-requests", { params: { scope: "calendar" } })).data.data,
   });
 
   const requests = data || [];
@@ -68,11 +69,8 @@ export default function CalendarPage() {
 
   const visibleRequests = useMemo(() => {
     if (!Array.isArray(requests)) return [];
-    if (role === "EMPLOYEE") {
-      return requests.filter((item) => item.employeeId === user?.id);
-    }
     return requests;
-  }, [requests, role, user?.id]);
+  }, [requests]);
 
   const grid = useMemo(() => buildGrid(activeMonth), [activeMonth]);
 
@@ -80,9 +78,6 @@ export default function CalendarPage() {
     month: "long",
     year: "numeric",
   });
-
-  const totalEvents = visibleRequests.length;
-  const pendingEvents = visibleRequests.filter((item) => item.status === "PENDING").length;
 
   return (
     <div className="grid">
@@ -96,8 +91,6 @@ export default function CalendarPage() {
           </div>
 
           <div className="dashboard-quick">
-            <span className="chip">{totalEvents} events</span>
-            <span className="chip">{pendingEvents} pending</span>
             {role === "EMPLOYEE" ? <Link className="btn" href="/leave/apply">+ Add Leave</Link> : null}
           </div>
         </div>
@@ -134,36 +127,56 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="calendar-grid">
-            {weekdays.map((day) => (
-              <div className="calendar-weekday" key={day}>
-                {day}
-              </div>
-            ))}
-
-            {grid.map((day) => {
-              const key = toIsoDate(day);
-              const inActiveMonth = day.getMonth() === activeMonth.getMonth();
-              const isToday = key === toIsoDate(new Date());
-              const dayEvents = eventForCell(visibleRequests, key);
-
-              return (
-                <div
-                  className={`calendar-cell ${inActiveMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`.trim()}
-                  key={key}
-                >
-                  <div className="cell-date">{day.getDate()}</div>
-
-                  {dayEvents.slice(0, 2).map((event) => (
-                    <span className={`event-chip ${event.status?.toLowerCase()}`} key={`${event.id}-${key}`} title={event.leaveType?.name}>
-                      {event.leaveType?.name || "Leave"}
-                    </span>
-                  ))}
-
-                  {dayEvents.length > 2 ? <span className="event-chip">+{dayEvents.length - 2} more</span> : null}
+          <div className="calendar-scroll">
+            <div className="calendar-grid">
+              {weekdays.map((day) => (
+                <div className="calendar-weekday" key={day}>
+                  {day}
                 </div>
-              );
-            })}
+              ))}
+
+              {grid.map((day) => {
+                const key = toIsoDate(day);
+                const inActiveMonth = day.getMonth() === activeMonth.getMonth();
+                const isToday = key === toIsoDate(new Date());
+                const dayEvents = eventForCell(visibleRequests, key);
+
+                return (
+                  <div
+                    className={`calendar-cell ${inActiveMonth ? "" : "is-outside"} ${isToday ? "is-today" : ""}`.trim()}
+                    key={key}
+                  >
+                    <div className="cell-date">{day.getDate()}</div>
+
+                    {dayEvents.map((event) => {
+                      const colors = getEmployeeColor(event.employee?.id);
+                      return (
+                        <span
+                          className="event-chip"
+                          key={`${event.id}-${key}`}
+                          style={{
+                            backgroundColor: colors.bg,
+                            color: colors.text,
+                            borderColor: colors.border,
+                            borderWidth: "1.5px",
+                          }}
+                          title={`${event.employee?.fullName || "Employee"} (${event.employee?.role?.name || "MEMBER"}) | ${
+                            event.leaveType?.name || "Leave"
+                          }${event.reason ? ` | ${event.reason}` : ""}`}
+                        >
+                          <span className="event-title">{event.employee?.fullName || "Employee"}</span>
+                          <span className="event-meta">
+                            {event.employee?.role?.name || "MEMBER"} · {event.leaveType?.name || "Leave"}
+                            {event.reason ? ` · ${event.reason}` : ""}
+                            {event.status ? ` · ${event.status}` : ""}
+                          </span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </Card>

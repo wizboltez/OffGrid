@@ -7,6 +7,7 @@ import { DataTable } from "components/ui/DataTable";
 import { Button } from "components/ui/Button";
 import { Modal } from "components/ui/Modal";
 import { Input } from "components/ui/Input";
+import { getEmployeeColor } from "lib/colorUtils";
 
 export default function EmployeeManagementPage() {
   const queryClient = useQueryClient();
@@ -147,7 +148,30 @@ export default function EmployeeManagementPage() {
 
       <DataTable
         columns={[
-          { key: "fullName", label: "Name" },
+          {
+            key: "fullName",
+            label: "Name",
+            render: (row) => {
+              const colors = getEmployeeColor(row.id);
+              return (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    backgroundColor: colors.bg,
+                    color: colors.text,
+                    padding: "0.4rem 0.8rem",
+                    borderRadius: "8px",
+                    borderLeft: `3px solid ${colors.border}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  <span style={{ fontSize: "0.9rem" }}>{row.fullName}</span>
+                </div>
+              );
+            },
+          },
           { key: "email", label: "Email" },
           { key: "role", label: "Role", render: (row) => row.role?.name },
           { key: "isActive", label: "Active", render: (row) => (row.isActive ? "Yes" : "No") },

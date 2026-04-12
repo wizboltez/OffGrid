@@ -1,9 +1,5 @@
-import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "providers/AppProviders";
-
-const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
 
 export const metadata = {
   title: "Leave Management",
@@ -11,8 +7,13 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  const fontVars = {
+    "--font-manrope": '"Segoe UI", "Poppins", "Noto Sans", sans-serif',
+    "--font-space": '"Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif',
+  };
+
   return (
-    <html lang="en" className={`${manrope.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" style={fontVars}>
       <body style={{ fontFamily: "var(--font-manrope), sans-serif" }}>
         <AppProviders>{children}</AppProviders>
       </body>

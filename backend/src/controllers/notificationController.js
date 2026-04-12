@@ -7,3 +7,8 @@ export const mine = asyncHandler(async (req, res) => {
   const result = await notificationService.listMyNotifications(req.user.id);
   res.status(StatusCodes.OK).json(apiResponse({ message: "Notifications fetched", data: result }));
 });
+
+export const markAsRead = asyncHandler(async (req, res) => {
+  await notificationService.markAllAsRead(req.user.id);
+  res.status(StatusCodes.OK).json(apiResponse({ message: "Notifications marked as read" }));
+});
